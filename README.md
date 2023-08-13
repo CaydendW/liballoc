@@ -34,8 +34,30 @@ Have a look at liballoc\_unix.c for an example of how to implement the library o
 NOTE: There are two ways to build the library:
 
 1. Compile the library with a new system file. For example, I've left unix.c with the default distribution. It gets compiled directly into the liballoc_unix.so file.
-
 2. Implement the functions in your application and then just link against the default liballoc.so library when you compile your app.
+
+Liballoc has these 3 C macros that can be changed:
+```
+#define LIBALLOC_PREFIX(f)
+#define LIBALLOC_DEFAULT_ALIGNMENT
+#define LIBALLOC_PAGE_COUNT
+```
+
+These macros mean the following:
++ LIBALLOC\_PREFIX is the prefix to insert before the name of the function call. Change by modifying the macro.
++ LIBALLOC\_DEFAULT\_ALIGNMENT is the default alignment for malloc, calloc and realloc.
++ LIBALLOC\_PAGE\_COUNT is the number of pages to allocate at a time
+
+Liballoc provides the following 5 functions:
+```c
+void *LIBALLOC_PREFIX(aligned_alloc)(size_t align, size_t req_size);
+void *LIBALLOC_PREFIX(malloc)(size_t size);
+void *LIBALLOC_PREFIX(calloc)(size_t nobj, size_t size);
+void *LIBALLOC_PREFIX(realloc)(void *p, size_t size);
+void LIBALLOC_PREFIX(free)(void *ptr);
+```
+
+They all correspond to their equivalent ANSI C and/or POSIX counterparts. aligned\_malloc will allocate memory similar to `man 3 aligned_alloc` except that the alignment may be arbitrary (Not just a power of 2).
 
 Quick Start
 ===========

@@ -46,7 +46,7 @@ static inline liballoc_major_t *liballoc_allocate_new_page(size_t size) {
   return maj;
 }
 
-void *LIBALLOC_PREFIX(aligned_malloc)(size_t req_size, size_t align) {
+void *LIBALLOC_PREFIX(aligned_alloc)(size_t align, size_t req_size) {
   liballoc_major_t *maj = liballoc_mem_root;
   size_t size = req_size + align + sizeof(size_t);
   size_t best_size = 0;
@@ -215,7 +215,7 @@ void *LIBALLOC_PREFIX(aligned_malloc)(size_t req_size, size_t align) {
 }
 
 void *LIBALLOC_PREFIX(malloc)(size_t size) {
-  return LIBALLOC_PREFIX(aligned_malloc)(size, LIBALLOC_DEFAULT_ALIGNMENT);
+  return LIBALLOC_PREFIX(aligned_alloc)(LIBALLOC_DEFAULT_ALIGNMENT, size);
 }
 
 void *LIBALLOC_PREFIX(calloc)(size_t nobj, size_t size) {
