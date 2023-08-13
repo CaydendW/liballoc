@@ -1,7 +1,7 @@
-liballoc - a small memory allocator
+liballoc - A small memory allocator
 ===================================
 
-This is liballoc, at least, a modified version done by me. This is a fork of [Blanham's repo of liballoc](https://github.com/blanham/liballoc/) with modifications to the C code that I prefer and the ability to do arbitrary alignment.
+This is liballoc, at least, a modified version done by me. This is a fork of [Blanham's repo of liballoc](https://github.com/blanham/liballoc/) with modifications to the C code that I prefer and the ability to do arbitrary alignment. It is an easy to port memory allocator for hobby operating systems and C standard libraries.
 
 Using liballoc
 ==============
