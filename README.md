@@ -3,6 +3,8 @@ liballoc - A small memory allocator
 
 This is liballoc, at least, a modified version done by me. This is a fork of [Blanham's repo of liballoc](https://github.com/blanham/liballoc/) with modifications to the C code that I prefer and the ability to do arbitrary alignment. It is an easy to port memory allocator for hobby operating systems and C standard libraries.
 
+Note that this software is not well tested (It has passed every test I have thrown at it) and it maybe have bugs and problems with it. There is no guarantee that this software is secure or safe. Use at your own risk and don't blame me when bugs arise. Submit a pull request instead :)
+
 Using liballoc
 ==============
 
@@ -49,7 +51,7 @@ The above command will pre-link the library into the application, essentially re
 
 License
 =======
-This work (Like the liballoc before it) is released into the public domain. It is licensed under the unlicense. If this is for whatever reason not practicle for your project or needs, it may also be licensed under the MIT license (With or without attribution) or the Do What The F\*ck You Want To Public License.
+This work (Like the liballoc before it) is released into the public domain. It is licensed under the unlicense. If this is for whatever reason not practical for your project or needs, it may also be licensed under the MIT license (With or without attribution) or the Do What The F\*ck You Want To Public License.
 
 Credits
 =======
