@@ -35,36 +35,36 @@ static inline liballoc_major_t *liballoc_allocate_new_page(size_t size) {
     return NULL;
 
   *maj = (liballoc_major_t){
-      .first = NULL,
-      .prev = NULL,
-      .next = NULL,
-      .pages = size,
-      .size = size * page_size,
-      .usage = sizeof(liballoc_major_t),
+    .first = NULL,
+    .prev = NULL,
+    .next = NULL,
+    .pages = size,
+    .size = size * page_size,
+    .usage = sizeof(liballoc_major_t),
   };
 
   return maj;
 }
 
 void *LIBALLOC_PREFIX(aligned_alloc)(size_t align, size_t req_size) {
-  liballoc_major_t *maj = liballoc_mem_root;
-  size_t size = req_size + align + sizeof(size_t);
-  size_t best_size = 0;
-  int started_bet = 0;
-
-  if (!align || !size || !req_size)
+  if (!req_size || !align)
     return NULL;
+
+  size_t size = req_size + align + sizeof(size_t);
 
   liballoc_lock();
 
   if (!liballoc_mem_root) {
     liballoc_mem_root = liballoc_allocate_new_page(size);
-    maj = liballoc_mem_root;
     if (!liballoc_mem_root) {
       liballoc_unlock();
       return NULL;
     }
   }
+
+  liballoc_major_t *maj = liballoc_mem_root;
+  size_t best_size = 0;
+  int started_bet = 0;
 
   if (liballoc_best_bet) {
     best_size = liballoc_best_bet->size - liballoc_best_bet->usage;
@@ -97,7 +97,6 @@ void *LIBALLOC_PREFIX(aligned_alloc)(size_t align, size_t req_size) {
       maj->next = liballoc_allocate_new_page(size);
       if (!maj->next)
         break;
-
       maj->next->prev = maj;
       maj = maj->next;
     }
@@ -105,87 +104,92 @@ void *LIBALLOC_PREFIX(aligned_alloc)(size_t align, size_t req_size) {
     if (!maj->first) {
       maj->first = (void *)((uintptr_t)maj + sizeof(liballoc_major_t));
       *maj->first = (liballoc_minor_t){
-          .magic = LIBALLOC_MAGIC,
-          .prev = NULL,
-          .next = NULL,
-          .block = maj,
-          .size = size,
-          .req_size = req_size,
+        .magic = LIBALLOC_MAGIC,
+        .prev = NULL,
+        .next = NULL,
+        .block = maj,
+        .size = size,
+        .req_size = req_size,
       };
 
       maj->usage += size + sizeof(liballoc_minor_t);
 
       void *p = liballoc_align(
-          (void *)((uintptr_t)(maj->first) + sizeof(liballoc_minor_t)), align);
+        (void *)((uintptr_t)maj->first + sizeof(liballoc_minor_t)), align);
       liballoc_unlock();
       return p;
     }
 
     if ((uintptr_t)maj->first - (uintptr_t)maj - sizeof(liballoc_major_t) >=
         size + sizeof(liballoc_minor_t)) {
+      maj->first->prev = (void *)((uintptr_t)maj + sizeof(liballoc_major_t));
+      maj->first->prev->next = maj->first;
       maj->first = maj->first->prev;
       *maj->first = (liballoc_minor_t){
-          .magic = LIBALLOC_MAGIC,
-          .prev = NULL,
-          .next = (void *)((uintptr_t)maj + sizeof(liballoc_major_t)),
-          .block = maj,
-          .size = size,
-          .req_size = req_size,
+        .magic = LIBALLOC_MAGIC,
+        .prev = NULL,
+        .next = maj->first->next,
+        .block = maj,
+        .size = size,
+        .req_size = req_size,
       };
-
-      maj->first->prev->next = maj->first;
 
       maj->usage += size + sizeof(liballoc_minor_t);
 
       void *p = liballoc_align(
-          (void *)((uintptr_t)(maj->first) + sizeof(liballoc_minor_t)), align);
+        (void *)((uintptr_t)maj->first + sizeof(liballoc_minor_t)), align);
       liballoc_unlock();
       return p;
     }
 
     liballoc_minor_t *min = maj->first;
+
     while (min) {
-      if (!min->next && (uintptr_t)maj - (uintptr_t)min - maj->size -
-                                min->size - sizeof(liballoc_minor_t) >=
-                            size + sizeof(liballoc_minor_t)) {
+      if (!min->next && (uintptr_t)maj - (uintptr_t)min + maj->size -
+                            min->size - sizeof(liballoc_major_t) >=
+                          size + sizeof(liballoc_minor_t)) {
         min->next =
-            (void *)((uintptr_t)min + sizeof(liballoc_minor_t) + min->size);
+          (void *)((uintptr_t)min + sizeof(liballoc_minor_t) + min->size);
+        min->next->prev = min;
         min = min->next;
         *min = (liballoc_minor_t){
-            .magic = LIBALLOC_MAGIC,
-            .prev = min,
-            .next = NULL,
-            .block = maj,
-            .size = size,
-            .req_size = req_size,
+          .magic = LIBALLOC_MAGIC,
+          .prev = min->prev,
+          .next = NULL,
+          .block = maj,
+          .size = size,
+          .req_size = req_size,
         };
 
         maj->usage += size + sizeof(liballoc_minor_t);
 
         void *p = liballoc_align(
-            (void *)((uintptr_t)min + sizeof(liballoc_minor_t)), align);
+          (void *)((uintptr_t)min + sizeof(liballoc_minor_t)), align);
         liballoc_unlock();
         return p;
-      } else if (min->next && (uintptr_t)min->next - (uintptr_t)min -
-                                      min->size - sizeof(liballoc_minor_t) >=
-                                  size + sizeof(liballoc_minor_t)) {
+      }
+
+      if (min->next && (uintptr_t)min->next - (uintptr_t)min - min->size -
+                           sizeof(liballoc_minor_t) >=
+                         size + sizeof(liballoc_minor_t)) {
         liballoc_minor_t *new_min =
-            (void *)((uintptr_t)min + sizeof(liballoc_minor_t) + min->size);
+          (void *)((uintptr_t)min + sizeof(liballoc_minor_t) + min->size);
         *new_min = (liballoc_minor_t){
-            .magic = LIBALLOC_MAGIC,
-            .prev = min,
-            .next = min->next,
-            .block = maj,
-            .size = size,
-            .req_size = req_size,
+          .magic = LIBALLOC_MAGIC,
+          .prev = min,
+          .next = min->next,
+          .block = maj,
+          .size = size,
+          .req_size = req_size,
         };
 
         min->next->prev = new_min;
         min->next = new_min;
+
         maj->usage += size + sizeof(liballoc_minor_t);
 
         void *p = liballoc_align(
-            (void *)((uintptr_t)new_min + sizeof(liballoc_minor_t)), align);
+          (void *)((uintptr_t)new_min + sizeof(liballoc_minor_t)), align);
         liballoc_unlock();
         return p;
       }
@@ -303,7 +307,7 @@ void LIBALLOC_PREFIX(free)(void *ptr) {
     liballoc_free_pages(maj, maj->pages);
   } else if (liballoc_best_bet &&
              maj->size - maj->usage >
-                 liballoc_best_bet->size - liballoc_best_bet->usage)
+               liballoc_best_bet->size - liballoc_best_bet->usage)
     liballoc_best_bet = maj;
 
   liballoc_unlock();

@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define LIBALLOC_PREFIX(f) liballoc_##f
+#define LIBALLOC_PREFIX(f) f
 
 #define LIBALLOC_DEFAULT_ALIGNMENT 64
 

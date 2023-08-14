@@ -1,4 +1,4 @@
-CFLAGS=-O3 -std=gnu99 -Wall -Wextra -Werror
+CFLAGS=-O3 -std=gnu99 -Wall -Wextra -Werror -fPIC
 HEADERPATH=-I./
 
 all: clean unix
